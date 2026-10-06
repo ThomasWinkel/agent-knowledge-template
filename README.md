@@ -30,4 +30,4 @@ Template-owned files are replaced on upgrade; do not edit them in a knowledge ba
 
 ## Developing the template
 
-See [.knowledge-base/TEMPLATE-DEVELOPMENT.md](.knowledge-base/TEMPLATE-DEVELOPMENT.md).
+Design decisions and their reasons: [.knowledge-base/DESIGN.md](.knowledge-base/DESIGN.md). Working on the template: [.knowledge-base/TEMPLATE-DEVELOPMENT.md](.knowledge-base/TEMPLATE-DEVELOPMENT.md).

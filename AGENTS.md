@@ -7,7 +7,7 @@ This repository is a knowledge base for AI agents: condensed knowledge that is *
 - `index.md` — all topics (generated).
 - `topics/<topic>/index.md` — topic entry point: overview, key facts, list of files with descriptions.
 - `topics/<topic>/*.md` — detail files, each with YAML frontmatter `title` and `description`.
-- `.knowledge-base/` — tooling and maintenance guides. Ignore unless contributing or maintaining.
+- `.knowledge-base/` — tooling, maintenance guides and the design rationale ([DESIGN.md](.knowledge-base/DESIGN.md)). Ignore unless contributing, maintaining or asked about the concept.
 
 ## Access
 

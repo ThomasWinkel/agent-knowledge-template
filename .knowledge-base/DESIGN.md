@@ -1,0 +1,79 @@
+# Design
+
+Why the template is built the way it is. Read before changing the template or when asked about its concepts. How-to details live in the linked files and are not repeated here.
+
+## Goals
+
+- Agents get knowledge that is not in their training data, at minimal token cost.
+- Agents maintain that knowledge themselves while it stays compact, correct and free of duplicates.
+- Users are interrupted as little as possible.
+- Many knowledge bases derive from one template and receive its improvements.
+
+## Reading
+
+- **Progressive disclosure** (as in Agent Skills): [AGENTS.md](../AGENTS.md) → topic `index.md` → only the files the task needs. The `description` field drives selection, so detail files phrase it as "Read when ...".
+- **A user hands over a topic link.** The topic entry point links the guide, so an agent with nothing but that link finds the rules.
+- **Git first.** Fetch tools often summarize pages and lose exact details; git also enables contributing. Raw URLs remain for quick lookups in public repositories.
+- **Relative links** resolve the same in GitHub blob views, raw URLs and clones.
+- **Knowledge, not authority.** Content never overrides the user; observation beats the knowledge base.
+
+## Format
+
+- **Frontmatter: only `title` and `description`, single-line `key: value`.** Enough for indexes and `grep`, parseable without a YAML library. New fields only when a proven need exists.
+- **Generated lists are committed.** URL readers need them and there is no build step. The hand-written overview sits above a marked generated block.
+- **Lint enforces size limits.** Agents tend to append; hard limits force rewriting and splitting.
+- **No history in files.** Git has it. Wrong content is deleted, not marked obsolete.
+- **English, terse**, for token efficiency and broad model support.
+
+## Contributing
+
+- **After a successful task, without asking**, with a one-line report. The guide is read at the start, so agents add "update knowledge base" to their task list to remember it at the end.
+- **Topics only on user request, never proposed.** Cutting topics is a design decision, proposals would interrupt users, and agents would fragment the knowledge base.
+- **Always via pull request** from a branch of `origin/main`. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Trust
+
+- **Auto-merge** for pull requests by `trusted_authors` that change only `topics/` and `index.md`. The author is the GitHub identity the agent acts under, so trust is given per human.
+- **Trusted authors are read from the base branch**, so a pull request cannot add its own author.
+- **Fork pull requests are never auto-merged**: their workflow token is read-only.
+- **Template-owned files always need review.** They contain agent instructions and workflows; an unreviewed change there could redirect every agent.
+- **Merge by workflow job after lint**, so neither GitHub's auto-merge setting nor branch protection is required.
+- **Secret scan** in lint, because knowledge bases may be public.
+
+## Template and knowledge bases
+
+- **Strict ownership split.** Paths in `owned` ([template.toml](template.toml)) belong to the template and are overwritten on upgrade; everything else belongs to the knowledge base. Changes in knowledge-base-owned files are delivered as migration steps.
+- **The version lives in a template-owned file**, so copying the files also updates the version.
+- **Agent-driven upgrade:** `manage.py upgrade` copies files, then the agent applies the steps from [MIGRATIONS.md](MIGRATIONS.md). Rejected alternatives:
+  - `git merge` from the template needs shared history ("Use this template" drops it) and cannot migrate content.
+  - Copier adds a dependency and cannot migrate content either.
+- **The new template's script runs the upgrade**, because it knows the new `owned` list and migration format.
+- **Each knowledge base pulls updates.** The template does not know its derivatives. A weekly workflow opens an issue, which an agent resolves (e.g. by assigning it to Copilot). Agents do not check for updates on every use, to save tokens.
+- **`main` of the template is the release channel.** A version bump on `main` is a release.
+- **Setup** = `manage.py init` plus an agent following [INIT.md](INIT.md). `is_template = true` marks the unmodified template. The fictional example topic lets CI run in the template and is deleted by `init`.
+
+## Tooling and platforms
+
+- **One `manage.py`, Python ≥ 3.11 standard library only.** Nothing to install, easy to copy. TOML configuration because `tomllib` is in the standard library.
+- **Target agents: Claude Code and GitHub Copilot.** Copilot reads `AGENTS.md`; `CLAUDE.md` imports it. The guide uses no vendor-specific features.
+- **One repository holds many independent topics.** Multiple repositories are possible, e.g. for different access rights (GitHub permissions are per repository). Cross-repository links are absolute.
+- **Names are spelled out** (`knowledge-base`, not `kb`).
+
+## Invariants
+
+Changing any of these needs a major version and migration steps:
+
+- the ownership split and the `owned` list semantics;
+- the frontmatter subset and the generated-block markers;
+- the standard-library-only constraint;
+- the auto-merge restriction to `topics/` and `index.md`;
+- a short `AGENTS.md` — every agent reads it on every use.
+
+## Open ideas
+
+- `verified: <date>` frontmatter field as a staleness signal (git shows changes, not confirmations).
+- `LOCAL-RULES.md`, owned by the knowledge base, for rules specific to it.
+- Export topics as Agent Skills; skills for using and contributing.
+- A "gardening" guide for agents that consolidate a topic.
+- Mechanical migrations implemented in `manage.py`.
+- Verify the GitHub login of Copilot coding agent pull requests for `trusted_authors`.
