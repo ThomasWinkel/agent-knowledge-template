@@ -1,0 +1,14 @@
+# Template metadata. Owned by the template and replaced on upgrade - do not edit in a knowledge base.
+
+repository = "https://github.com/ThomasWinkel/agent-knowledge-template"
+branch = "main"
+version = "0.1.0"
+
+# Paths owned by the template. `manage.py upgrade` deletes and re-copies them.
+# A trailing "/" denotes a whole directory; other entries may be glob patterns.
+owned = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  ".knowledge-base/",
+  ".github/workflows/knowledge-base-*.yml",
+]

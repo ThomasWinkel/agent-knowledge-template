@@ -1,0 +1,13 @@
+# Configuration of this knowledge base. Owned by the knowledge base; template upgrades never touch it.
+
+# Marks the unmodified template. `manage.py init` removes it when a new knowledge base is set up.
+is_template = true
+
+name = "Agent Knowledge Template"
+description = "Template for knowledge bases that AI agents read and maintain. Contains a fictional example topic."
+repository = "https://github.com/ThomasWinkel/agent-knowledge-template"
+
+[auto_merge]
+# GitHub logins whose pull requests are merged automatically when lint passes
+# and only files under topics/ or index.md change.
+trusted_authors = ["ThomasWinkel"]
