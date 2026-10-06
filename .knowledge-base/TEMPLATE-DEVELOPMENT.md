@@ -2,7 +2,7 @@
 
 Applies only to the template repository (`is_template = true`), not to knowledge bases derived from it.
 
-- **Ownership.** Files listed under `owned` in `template.toml` belong to the template and are overwritten in every knowledge base on upgrade. Everything else (`knowledge-base.toml`, `README.md`, `index.md`, `topics/`, `.gitignore`, `.gitattributes`) belongs to the knowledge base; changes there reach existing knowledge bases only through migration steps.
+- **Ownership.** Files listed under `owned` in `template.toml` belong to the template and are overwritten in every knowledge base on upgrade. Everything else (`knowledge-base.toml`, `README.md`, `LICENSE`, `index.md`, `topics/`, `.gitignore`, `.gitattributes`) belongs to the knowledge base; changes there reach existing knowledge bases only through migration steps.
 - **Example topic.** `topics/example/` is fictional, shows the format and lets CI run in the template. `manage.py init` deletes it.
 - **Releasing a change** that affects knowledge bases:
   1. Bump `version` in `template.toml` (semver: major = manual content migration needed, minor = new features, patch = fixes).
