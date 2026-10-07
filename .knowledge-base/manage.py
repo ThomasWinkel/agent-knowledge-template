@@ -5,7 +5,7 @@ Standard library only, Python >= 3.11. Usage:
 
     python .knowledge-base/manage.py <command> [--help]
 
-Commands: index, lint, new-topic, init, upgrade, check-template, can-auto-merge.
+Commands: index, lint, new-topic, install, init, upgrade, check-template, can-auto-merge.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ BEGIN_MARKER = f"<!-- BEGIN GENERATED CONTENTS: do not edit, run `{INDEX_COMMAND
 BEGIN_PREFIX = "<!-- BEGIN GENERATED CONTENTS"
 END_MARKER = "<!-- END GENERATED CONTENTS -->"
 
-CONTRIBUTION_MODES = ("pull-request", "direct-push")
+CONTRIBUTION_MODES = ("pull-request", "direct-push", "with-project")
 DEFAULT_CONTRIBUTION = "pull-request"
 VERSION_TAG_RE = re.compile(r"refs/tags/v(\d+\.\d+\.\d+)")
 
@@ -53,6 +53,8 @@ DESCRIPTION_CHARS_WARN = 200
 # A pull request is merged automatically only if every changed path starts with one of these.
 AUTO_MERGE_PATHS = (f"{TOPICS_DIR}/", INDEX_FILE)
 SKIP_DIRS = {".git", "__pycache__", "node_modules"}
+# Files `install` keeps when the target already has them (e.g. created with a new repository).
+KEEP_IF_EXISTS = {"LICENSE", ".gitignore", ".gitattributes"}
 
 SECRET_PATTERNS = {
     "GitHub token": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,})"),
@@ -122,6 +124,22 @@ def git(*args: str, cwd: Path = ROOT) -> str:
     if result.returncode != 0:
         fail(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout
+
+
+def git_toplevel(path: Path) -> Path | None:
+    """Root of the git working tree containing `path` (which may not exist yet)."""
+    probe = path.resolve()
+    while not probe.exists():
+        probe = probe.parent
+    result = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=probe, capture_output=True, text=True)
+    top = result.stdout.strip()
+    return Path(top).resolve() if result.returncode == 0 and top else None
+
+
+def is_embedded(root: Path) -> bool:
+    """True if the knowledge base is a folder inside a larger repository, e.g. a project."""
+    top = git_toplevel(root)
+    return top is not None and top != root.resolve()
 
 
 def set_github_output(**values: str) -> None:
@@ -280,7 +298,8 @@ def lint_config(report: Report) -> dict | None:
     except (OSError, tomllib.TOMLDecodeError) as e:
         report.error(path, f"cannot read: {e}")
     if config is not None:
-        for key in ("name", "description", "repository"):
+        required = ("name", "description") + (() if config.get("contribution") == "with-project" else ("repository",))
+        for key in required:
             if not isinstance(config.get(key), str) or not config[key].strip():
                 report.error(path, f"'{key}' must be a non-empty string")
         if config.get("contribution", DEFAULT_CONTRIBUTION) not in CONTRIBUTION_MODES:
@@ -301,6 +320,8 @@ def lint_config(report: Report) -> dict | None:
             report.error(path, "'repository' must be a git URL")
         if not isinstance(meta.get("owned"), list):
             report.error(path, "'owned' must be a list of paths")
+        if not set(meta.get("standalone_only", [])) <= set(meta.get("owned", [])):
+            report.error(path, "'standalone_only' must be a subset of 'owned'")
     return config
 
 
@@ -374,7 +395,8 @@ def markdown_files() -> list[Path]:
     return sorted(files)
 
 
-def lint_links(report: Report, path: Path) -> None:
+def lint_links(report: Report, path: Path, boundary: Path) -> None:
+    """Relative links must resolve inside `boundary`: the repository, including project files when embedded."""
     for target in LINK_RE.findall(STRIP_RE.sub("", read_text(path))):
         if not target or target.startswith("#") or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
             continue
@@ -382,7 +404,7 @@ def lint_links(report: Report, path: Path) -> None:
             report.error(path, f"use relative links: {target}")
             continue
         resolved = (path.parent / urllib.parse.unquote(target.split("#")[0].split("?")[0])).resolve()
-        if not resolved.is_relative_to(ROOT):
+        if not resolved.is_relative_to(boundary):
             report.error(path, f"link points outside the repository: {target}")
         elif not resolved.exists():
             report.error(path, f"broken link: {target}")
@@ -392,8 +414,9 @@ def cmd_lint(args: argparse.Namespace) -> int:
     report = Report()
     config = lint_config(report)
     lint_topics(report)
+    boundary = git_toplevel(ROOT) or ROOT
     for path in markdown_files():
-        lint_links(report, path)
+        lint_links(report, path, boundary)
     if config is not None:
         for path, text in expected_indexes(config).items():
             if not path.is_file() or read_text(path) != text:
@@ -431,7 +454,7 @@ def cmd_new_topic(args: argparse.Namespace) -> int:
     return 0
 
 
-# --- init --------------------------------------------------------------------
+# --- install / init ----------------------------------------------------------
 
 CONFIG_TEMPLATE = """\
 # Configuration of this knowledge base. Owned by the knowledge base; template upgrades never touch it.
@@ -443,6 +466,7 @@ repository = {repository}
 # How agents publish changes:
 #   "pull-request" - pull requests; auto-merged for trusted_authors (GitHub), otherwise reviewed
 #   "direct-push"  - push to main; the git server's access rights decide who may write
+#   "with-project" - embedded in a project repository; changes go with the project's own commits
 contribution = {contribution}
 
 [auto_merge]
@@ -496,23 +520,111 @@ README_GENERIC = {
     ),
 }
 
+README_EMBEDDED = """\
+# {name}
+
+{description}
+
+Knowledge for AI agents (Claude Code, GitHub Copilot) working on this project, created from
+[agent-knowledge-template]({template}). Agents read it when a task needs knowledge that is not
+evident from the code, and update it together with their code changes, so it is reviewed with them.
+
+- Topics: [index.md](index.md). Rules for agents: [AGENTS.md](AGENTS.md).
+- New topic: ask an agent to create it.
+- Template updates: agents mention new template versions when they contribute. To upgrade,
+  ask an agent to follow `.knowledge-base/UPGRADE.md`.
+"""
+
+EMBEDDED_NEXT_STEPS = """
+Embedded in a project. Next steps (see .knowledge-base/INIT.md):
+
+1. With the user's consent, add to the project's AGENTS.md or CLAUDE.md:
+
+## Agent knowledge
+
+Project knowledge for AI agents lives in `{prefix}/`; its topics are listed in `{prefix}/index.md`.
+Read `{prefix}/AGENTS.md` before using or updating it.
+
+2. If the project has CI, offer to add a lint step (Python >= 3.11):
+
+python {prefix}/.knowledge-base/manage.py lint
+"""
+
 
 def detect_repository() -> str | None:
     result = subprocess.run(["git", "remote", "get-url", "origin"], cwd=ROOT, capture_output=True, text=True)
     return result.stdout.strip() or None if result.returncode == 0 else None
 
 
+def template_files(root: Path) -> list[str]:
+    files = []
+    for folder, dirs, names in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        files += [(Path(folder) / n).relative_to(root).as_posix() for n in names if not n.endswith(".pyc")]
+    return sorted(files)
+
+
+def owned_matches(root: Path, pattern: str) -> list[Path]:
+    if pattern.endswith("/"):
+        path = root / pattern.rstrip("/")
+        return [path] if path.exists() else []
+    return sorted(root.glob(pattern))
+
+
+def owned_files(root: Path, pattern: str) -> set[str]:
+    files = set()
+    for path in owned_matches(root, pattern):
+        paths = [p for p in path.rglob("*") if p.is_file()] if path.is_dir() else [path]
+        files |= {p.relative_to(root).as_posix() for p in paths}
+    return files
+
+
+def cmd_install(args: argparse.Namespace) -> int:
+    source, target = ROOT, Path(args.target).resolve()
+    if target.is_relative_to(source) or source.is_relative_to(target):
+        fail("clone the template outside the target and run its manage.py with --target <path>")
+    if (target / CONFIG_FILE).exists():
+        fail(f"{target} already contains a knowledge base; use `upgrade` instead")
+    embedded = is_embedded(target)
+    meta = load_toml(source / TEMPLATE_FILE)
+    skip = {"LICENSE"} if embedded else set()  # an embedded knowledge base falls under the project's license
+    if embedded:
+        for pattern in meta.get("standalone_only", []):
+            skip |= owned_files(source, pattern)
+    files = [f for f in template_files(source) if f not in skip]
+    conflicts = [f for f in files if (target / f).exists() and f not in KEEP_IF_EXISTS and f != "README.md"]
+    if conflicts and not args.force:
+        fail("target already contains: " + ", ".join(conflicts) + " (use --force to overwrite)")
+    for f in files:
+        if f in KEEP_IF_EXISTS and (target / f).exists():
+            continue
+        (target / f).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source / f, target / f)
+    print(f"Copied template {meta['version']} to {target}" + (" (embedded in a project)." if embedded else "."), flush=True)
+
+    command = [sys.executable, str(target / ".knowledge-base" / "manage.py"), "init",
+               "--name", args.name, "--description", args.description]
+    if args.repository:
+        command += ["--repository", args.repository]
+    if args.contribution:
+        command += ["--contribution", args.contribution]
+    for author in args.trusted_author or []:
+        command += ["--trusted-author", author]
+    return subprocess.run(command).returncode
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     config = load_config()
     if not config.get("is_template") and not args.force:
         fail("this knowledge base is already initialized (use --force to re-initialize)")
-    repository = args.repository or detect_repository()
-    if not repository:
+    embedded = is_embedded(ROOT)
+    repository = args.repository or detect_repository() or ""
+    if not repository and not embedded:
         fail("cannot determine the repository URL from `git remote get-url origin`; pass --repository <url>")
     slug = github_slug(repository)
     if slug:
         repository = f"https://github.com/{slug}"
-    contribution = args.contribution or ("pull-request" if slug else "direct-push")
+    contribution = args.contribution or ("with-project" if embedded else "pull-request" if slug else "direct-push")
     authors = args.trusted_author or ([slug.split("/")[0]] if slug and contribution == "pull-request" else [])
     template = load_toml(ROOT / TEMPLATE_FILE)["repository"]
 
@@ -523,28 +635,28 @@ def cmd_init(args: argparse.Namespace) -> int:
         contribution=json.dumps(contribution),
         authors=", ".join(json.dumps(a) for a in authors),
     ))
-    github = slug is not None
-    texts = README_GITHUB if github and contribution == "pull-request" else README_GENERIC
-    write_text(ROOT / "README.md", README_TEMPLATE.format(
-        name=args.name, description=args.description, repository=repository, template=template,
-        usage_extra=README_GITHUB["usage"].format(repository=repository) if github else "",
-        maintenance=texts[contribution] + (README_GITHUB if github else README_GENERIC)["updates"],
-    ))
+    if embedded:
+        readme = README_EMBEDDED.format(name=args.name, description=args.description, template=template)
+        (ROOT / "LICENSE").unlink(missing_ok=True)
+    else:
+        github = slug is not None
+        texts = README_GITHUB if github and contribution == "pull-request" else README_GENERIC
+        readme = README_TEMPLATE.format(
+            name=args.name, description=args.description, repository=repository, template=template,
+            usage_extra=README_GITHUB["usage"].format(repository=repository) if github else "",
+            maintenance=texts.get(contribution, "") + (README_GITHUB if github else README_GENERIC)["updates"],
+        )
+    write_text(ROOT / "README.md", readme)
     shutil.rmtree(ROOT / TOPICS_DIR / EXAMPLE_TOPIC, ignore_errors=True)
     write_indexes(load_config())
-    print(f"Initialized knowledge base '{args.name}' for {repository} (contribution: {contribution}"
-          + (f", trusted authors: {', '.join(authors)}" if authors else "") + ").")
+    print(f"Initialized knowledge base '{args.name}'" + (f" for {repository}" if repository else "")
+          + f" (contribution: {contribution}" + (f", trusted authors: {', '.join(authors)}" if authors else "") + ").")
+    if embedded:
+        print(EMBEDDED_NEXT_STEPS.format(prefix=ROOT.relative_to(git_toplevel(ROOT)).as_posix()))
     return 0
 
 
 # --- upgrade -----------------------------------------------------------------
-
-
-def owned_matches(root: Path, pattern: str) -> list[Path]:
-    if pattern.endswith("/"):
-        path = root / pattern.rstrip("/")
-        return [path] if path.exists() else []
-    return sorted(root.glob(pattern))
 
 
 def migrations_between(text: str, old: tuple[int, ...], new: tuple[int, ...]) -> list[str]:
@@ -554,6 +666,17 @@ def migrations_between(text: str, old: tuple[int, ...], new: tuple[int, ...]) ->
         if VERSION_RE.match(version) and old < parse_version(version) <= new:
             sections.append((parse_version(version), "## " + section.strip()))
     return [text for _, text in sorted(sections)]
+
+
+def remove(path: Path, target: Path) -> None:
+    """Delete an owned path and any folders it leaves empty, never touching `target` itself."""
+    if path.resolve() == target or not path.resolve().is_relative_to(target):
+        fail(f"refusing to delete {path}")
+    shutil.rmtree(path) if path.is_dir() else path.unlink()
+    parent = path.parent
+    while parent.resolve() != target and parent.is_dir() and not any(parent.iterdir()):
+        parent.rmdir()
+        parent = parent.parent
 
 
 def cmd_upgrade(args: argparse.Namespace) -> int:
@@ -568,14 +691,15 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     if new <= old and not args.force:
         print(f"Already at template version {old_meta['version']}; nothing to do.")
         return 0
+    embedded = is_embedded(target)
+    skipped = set(new_meta.get("standalone_only", [])) if embedded else set()
 
-    patterns = list(dict.fromkeys(old_meta.get("owned", []) + new_meta["owned"]))
-    for pattern in patterns:
+    for pattern in dict.fromkeys(old_meta.get("owned", []) + new_meta["owned"]):
         for path in owned_matches(target, pattern):
-            if path.resolve() == target or not path.resolve().is_relative_to(target):
-                fail(f"refusing to delete {path}")
-            shutil.rmtree(path) if path.is_dir() else path.unlink()
+            remove(path, target)
     for pattern in new_meta["owned"]:
+        if pattern in skipped:
+            continue
         for path in owned_matches(source, pattern):
             destination = target / path.relative_to(source)
             if path.is_dir():
@@ -584,7 +708,8 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, destination)
 
-    print(f"Replaced template-owned files: {old_meta.get('version', 'unknown')} -> {new_meta['version']}.")
+    print(f"Replaced template-owned files: {old_meta.get('version', 'unknown')} -> {new_meta['version']}"
+          + (" (embedded: skipped " + ", ".join(sorted(skipped)) + ")." if skipped else "."))
     migrations = migrations_between(read_text(source / MIGRATIONS_FILE), old, new)
     print("\nApply these migration steps, oldest first:\n" if migrations else "\nNo migration steps.")
     print("\n\n".join(migrations))
@@ -653,14 +778,25 @@ def main() -> int:
     p.add_argument("--description", required=True, help="one line: what the topic covers")
     p.set_defaults(func=cmd_new_topic)
 
-    p = sub.add_parser("init", help="turn a fresh copy of the template into a new knowledge base")
-    p.add_argument("--name", required=True)
-    p.add_argument("--description", required=True, help="one sentence: purpose of the knowledge base")
-    p.add_argument("--repository", help="git URL (default: from git remote origin)")
-    p.add_argument("--contribution", choices=CONTRIBUTION_MODES,
-                   help="how agents publish changes (default: pull-request on GitHub, otherwise direct-push)")
-    p.add_argument("--trusted-author", action="append",
-                   help="GitHub login for auto-merge in pull-request mode (repeatable; default: repo owner)")
+    def add_setup_arguments(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--name", required=True)
+        p.add_argument("--description", required=True, help="one sentence: purpose of the knowledge base")
+        p.add_argument("--repository", help="git URL (default: from git remote origin)")
+        p.add_argument("--contribution", choices=CONTRIBUTION_MODES,
+                       help="how agents publish changes (default: with-project when embedded in a project, "
+                            "pull-request on GitHub, otherwise direct-push)")
+        p.add_argument("--trusted-author", action="append",
+                       help="GitHub login for auto-merge in pull-request mode (repeatable; default: repo owner)")
+
+    p = sub.add_parser("install", help="run from a template checkout: set up a knowledge base in --target "
+                                       "(repository root, or a folder inside a project)")
+    p.add_argument("--target", required=True, help="folder for the knowledge base, e.g. . or agent-knowledge")
+    add_setup_arguments(p)
+    p.add_argument("--force", action="store_true", help="overwrite existing files in the target")
+    p.set_defaults(func=cmd_install)
+
+    p = sub.add_parser("init", help="turn a copy of the template (e.g. from 'Use this template') into a knowledge base")
+    add_setup_arguments(p)
     p.add_argument("--force", action="store_true", help="re-initialize an existing knowledge base")
     p.set_defaults(func=cmd_init)
 

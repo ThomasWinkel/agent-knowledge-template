@@ -1,8 +1,10 @@
 # Agent Guide
 
-This repository is a knowledge base for AI agents: condensed knowledge that is **not in your training data** — internal processes, private APIs, conventions, verified recipes and gotchas. Read this guide once per session before using it.
+This is a knowledge base for AI agents: condensed knowledge that is **not in your training data** — internal processes, private APIs, conventions, verified recipes and gotchas. It is a repository of its own or a folder embedded in a project repository. Read this guide once per session before using it.
 
 ## Layout
+
+Paths are relative to the knowledge base root, the folder containing `knowledge-base.toml`.
 
 - `index.md` — all topics (generated).
 - `topics/<topic>/index.md` — topic entry point: overview, key facts, list of files with descriptions.
@@ -11,11 +13,11 @@ This repository is a knowledge base for AI agents: condensed knowledge that is *
 
 ## Access
 
-Prefer git (SSH or HTTPS, any git server): it returns exact content and is needed to contribute. You may get a link to a file, or a repository URL plus a topic name — then open `topics/<topic>/index.md` in the clone.
-
-- Existing clone: `git pull --ff-only` first. If that fails (local changes, diverged branch), read anyway and tell the user.
-- No clone: `git clone --depth 1 <repository-url>` into your scratchpad or temp directory, or into the persistent path your instructions name.
-- Quick lookups without git (public GitHub repositories only): fetch raw files, converting `https://github.com/<owner>/<repo>/blob/<branch>/<path>` to `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`. Prefer `curl` over fetch tools that summarize pages; summaries drop exact details.
+- **Embedded** (`contribution = "with-project"`): the files are in your working tree. Read them there; never pull or switch branches for the knowledge base.
+- **Own repository:** prefer git (SSH or HTTPS, any git server): it returns exact content and is needed to contribute. You may get a link to a file, or a repository URL plus a topic name — then open `topics/<topic>/index.md` in the clone.
+  - Existing clone: `git pull --ff-only` first. If that fails (local changes, diverged branch), read anyway and tell the user.
+  - No clone: `git clone --depth 1 <repository-url>` into your scratchpad or temp directory, or into the persistent path your instructions name.
+  - Quick lookups without git (public GitHub repositories only): fetch raw files, converting `https://github.com/<owner>/<repo>/blob/<branch>/<path>` to `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`. Prefer `curl` over fetch tools that summarize pages; summaries drop exact details.
 
 ## Reading
 
@@ -45,6 +47,6 @@ Before writing, read [.knowledge-base/CONTRIBUTING.md](.knowledge-base/CONTRIBUT
 
 ## Maintenance (only when the user asks)
 
-- Set up a new knowledge base from the template (`is_template = true` in `knowledge-base.toml`): [.knowledge-base/INIT.md](.knowledge-base/INIT.md)
+- Set up a knowledge base from the template — as its own repository or embedded in a project: [.knowledge-base/INIT.md](.knowledge-base/INIT.md)
 - Upgrade to a newer template version: [.knowledge-base/UPGRADE.md](.knowledge-base/UPGRADE.md)
 - Work on the template itself: [.knowledge-base/TEMPLATE-DEVELOPMENT.md](.knowledge-base/TEMPLATE-DEVELOPMENT.md)
