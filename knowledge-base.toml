@@ -7,7 +7,12 @@ name = "Agent Knowledge Template"
 description = "Template for knowledge bases that AI agents read and maintain. Contains a fictional example topic."
 repository = "https://github.com/ThomasWinkel/agent-knowledge-template"
 
+# How agents publish changes:
+#   "pull-request" - pull requests; auto-merged for trusted_authors (GitHub), otherwise reviewed
+#   "direct-push"  - push to main; the git server's access rights decide who may write
+contribution = "pull-request"
+
 [auto_merge]
-# GitHub logins whose pull requests are merged automatically when lint passes
-# and only files under topics/ or index.md change.
+# Only for contribution = "pull-request": GitHub logins whose pull requests are merged
+# automatically when lint passes and only files under topics/ or index.md change.
 trusted_authors = ["ThomasWinkel"]

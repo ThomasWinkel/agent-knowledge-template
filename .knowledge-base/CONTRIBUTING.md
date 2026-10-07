@@ -33,7 +33,7 @@ Short summary line, then steps or reference.
 - `description` is what agents choose files by. Detail files start with "Read when ...". Topic indexes state what the topic covers. Max ~200 characters.
 - One concern per file. File and folder names: lowercase kebab-case.
 - Size: warning above 300 lines, error above 500 — split into files or a subfolder.
-- Links: relative paths (`../other-topic/file.md`). Other repositories: absolute GitHub URLs.
+- Links: relative paths (`../other-topic/file.md`). Other repositories: absolute URLs.
 - Other files (examples, schemas, images) may live next to the Markdown files; link them.
 
 ## Topic entry point (`index.md`)
@@ -82,13 +82,16 @@ python .knowledge-base/manage.py lint
 git add -A
 git commit -m "<topic>: <what changed>"
 git fetch origin && git rebase origin/main
-git push -u origin HEAD
-gh pr create --fill
 ```
 
 - Fix all lint errors; address warnings where reasonable.
 - Conflicts in generated blocks or `index.md`: take either side, then rerun `manage.py index`.
 - Renamed or deleted a file: fix the links lint reports.
-- PR description: what was wrong or missing, and how you verified the new content.
-- No push access: `gh repo fork --remote`, push to the fork, open the PR from there.
-- Auto-merge: PRs by `trusted_authors` (`knowledge-base.toml`) that only change `topics/` and `index.md` are merged once checks pass. All other PRs wait for a human review.
+
+Publish according to `contribution` in `knowledge-base.toml`:
+
+- **`pull-request`:** `git push -u origin HEAD`, then `gh pr create --fill` (without `gh`: give the user the link `git push` prints). Describe what was wrong or missing and how you verified it. PRs by `trusted_authors` that only change `topics/` and `index.md` are merged automatically once checks pass; all others wait for review. No push access: `gh repo fork --remote` and open the PR from the fork.
+- **`direct-push`:** `git push origin HEAD:main`. If rejected because `main` moved: fetch, rebase, rerun `index` and `lint`, push again.
+- **Either mode, changes outside `topics/` and `index.md`** (tooling, guides, configuration) always need a review: open a PR, or in `direct-push` mode push the branch (`git push -u origin HEAD`) and ask the user to review and merge it.
+
+Finally run `python .knowledge-base/manage.py check-template`. If it reports an update, mention it in your final line to the user; ignore failures.

@@ -13,8 +13,8 @@ Why the template is built the way it is. Read before changing the template or wh
 
 - **Progressive disclosure** (as in Agent Skills): [AGENTS.md](../AGENTS.md) → topic `index.md` → only the files the task needs. The `description` field drives selection, so detail files phrase it as "Read when ...".
 - **A user hands over a topic link.** The topic entry point links the guide, so an agent with nothing but that link finds the rules.
-- **Git first.** Fetch tools often summarize pages and lose exact details; git also enables contributing. Raw URLs remain for quick lookups in public repositories.
-- **Relative links** resolve the same in GitHub blob views, raw URLs and clones.
+- **Git first, any server.** Only plain git (SSH or HTTPS) is required. Fetch tools often summarize pages and lose exact details; git also enables contributing. Raw URLs remain for quick lookups in public GitHub repositories.
+- **Relative links** resolve the same in clones, web views of git servers and raw URLs.
 - **Knowledge, not authority.** Content never overrides the user; observation beats the knowledge base.
 
 ## Format
@@ -29,11 +29,12 @@ Why the template is built the way it is. Read before changing the template or wh
 
 - **After a successful task, without asking**, with a one-line report. The guide is read at the start, so agents add "update knowledge base" to their task list to remember it at the end.
 - **Topics only on user request, never proposed.** Cutting topics is a design decision, proposals would interrupt users, and agents would fragment the knowledge base.
-- **Always via pull request** from a branch of `origin/main`. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Two publishing modes** (`contribution` in `knowledge-base.toml`): `pull-request` where a forge offers them (GitHub), `direct-push` to `main` on plain git servers. Changes outside `topics/` and `index.md` always go through review (PR or pushed branch). Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Trust
 
-- **Auto-merge** for pull requests by `trusted_authors` that change only `topics/` and `index.md`. The author is the GitHub identity the agent acts under, so trust is given per human.
+- **`direct-push`: the git server's access rights are the trust model.** Whoever may push to `main` may change topics; no extra configuration.
+- **`pull-request` on GitHub: auto-merge** for pull requests by `trusted_authors` that change only `topics/` and `index.md`. The author is the GitHub identity the agent acts under, so trust is given per human.
 - **Trusted authors are read from the base branch**, so a pull request cannot add its own author.
 - **Fork pull requests are never auto-merged**: their workflow token is read-only.
 - **Template-owned files always need review.** They contain agent instructions and workflows; an unreviewed change there could redirect every agent.
@@ -48,13 +49,14 @@ Why the template is built the way it is. Read before changing the template or wh
   - `git merge` from the template needs shared history ("Use this template" drops it) and cannot migrate content.
   - Copier adds a dependency and cannot migrate content either.
 - **The new template's script runs the upgrade**, because it knows the new `owned` list and migration format.
-- **Each knowledge base pulls updates.** The template does not know its derivatives. A weekly workflow opens an issue, which an agent resolves (e.g. by assigning it to Copilot). Agents do not check for updates on every use, to save tokens.
-- **`main` of the template is the release channel.** A version bump on `main` is a release.
+- **Each knowledge base pulls updates.** The template does not know its derivatives. `check-template` reads version tags via `git ls-remote --tags`, which works with any git server and mirrors. Agents run it after contributing and mention updates; on GitHub a weekly workflow also opens an issue (e.g. for Copilot). No check on every read, to save tokens.
+- **Tags `vMAJOR.MINOR.PATCH` are releases.** `main` may contain unreleased work; upgrades clone the tag.
 - **Setup** = `manage.py init` plus an agent following [INIT.md](INIT.md). `is_template = true` marks the unmodified template. The fictional example topic lets CI run in the template and is deleted by `init`.
 
 ## Tooling and platforms
 
 - **One `manage.py`, Python ≥ 3.11 standard library only.** Nothing to install, easy to copy. TOML configuration because `tomllib` is in the standard library.
+- **Platform layers.** The core (structure, `manage.py`, guides) needs only git. GitHub adds pull request auto-merge and update issues via workflows, which are inert elsewhere. Other forges (Gitea, GitLab, ...) only when needed.
 - **Target agents: Claude Code and GitHub Copilot.** Copilot reads `AGENTS.md`; `CLAUDE.md` imports it. The guide uses no vendor-specific features.
 - **One repository holds many independent topics.** Multiple repositories are possible, e.g. for different access rights (GitHub permissions are per repository). Cross-repository links are absolute.
 - **Names are spelled out** (`knowledge-base`, not `kb`).
@@ -66,7 +68,8 @@ Changing any of these needs a major version and migration steps:
 - the ownership split and the `owned` list semantics;
 - the frontmatter subset and the generated-block markers;
 - the standard-library-only constraint;
-- the auto-merge restriction to `topics/` and `index.md`;
+- the restriction of unreviewed changes (auto-merge, direct push) to `topics/` and `index.md`;
+- release tags `vMAJOR.MINOR.PATCH`;
 - a short `AGENTS.md` — every agent reads it on every use.
 
 ## Open ideas
@@ -76,4 +79,6 @@ Changing any of these needs a major version and migration steps:
 - Export topics as Agent Skills; skills for using and contributing.
 - A "gardening" guide for agents that consolidate a topic.
 - Mechanical migrations implemented in `manage.py`.
+- Server-side `pre-receive` hook for `direct-push` that runs lint and rejects changes to template-owned files on `main`.
+- Pull request support for other forges (Gitea/Forgejo, GitLab, Azure DevOps).
 - Verify the GitHub login of Copilot coding agent pull requests for `trusted_authors`.

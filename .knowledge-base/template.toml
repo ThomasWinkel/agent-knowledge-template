@@ -1,8 +1,8 @@
 # Template metadata. Owned by the template and replaced on upgrade - do not edit in a knowledge base.
 
+# Any git URL. Releases are tags vMAJOR.MINOR.PATCH; `version` is the release this copy came from.
 repository = "https://github.com/ThomasWinkel/agent-knowledge-template"
-branch = "main"
-version = "0.1.0"
+version = "0.2.0"
 
 # Paths owned by the template. `manage.py upgrade` deletes and re-copies them.
 # A trailing "/" denotes a whole directory; other entries may be glob patterns.

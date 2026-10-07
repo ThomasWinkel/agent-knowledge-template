@@ -7,6 +7,6 @@ Applies only to the template repository (`is_template = true`), not to knowledge
 - **Releasing a change** that affects knowledge bases:
   1. Bump `version` in `template.toml` (semver: major = manual content migration needed, minor = new features, patch = fixes).
   2. Add a `## <version>` section to `MIGRATIONS.md` with exact, executable steps — or "None.". Prefer making `manage.py` perform mechanical migrations and keep the agent steps short.
-  3. Knowledge bases detect the new version on `main` via `manage.py check-template` (weekly workflow).
+  3. Commit, push, then tag the commit and push the tag: `git tag v<version> && git push origin v<version>`. The tag is the release: `manage.py check-template` in knowledge bases finds it via `git ls-remote --tags`, and upgrades clone it.
 - **Constraints.** `manage.py` uses the Python ≥ 3.11 standard library only. Frontmatter stays a single-line `key: value` subset. Keep `AGENTS.md` short: every agent reads it on every use.
 - **Testing.** `python .knowledge-base/manage.py lint` must pass. Test `init` and `upgrade` on a copy in a temp directory, never on this repository.

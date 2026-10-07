@@ -11,11 +11,11 @@ This repository is a knowledge base for AI agents: condensed knowledge that is *
 
 ## Access
 
-Prefer git: it returns exact content and is needed to contribute.
+Prefer git (SSH or HTTPS, any git server): it returns exact content and is needed to contribute. You may get a link to a file, or a repository URL plus a topic name — then open `topics/<topic>/index.md` in the clone.
 
 - Existing clone: `git pull --ff-only` first. If that fails (local changes, diverged branch), read anyway and tell the user.
 - No clone: `git clone --depth 1 <repository-url>` into your scratchpad or temp directory, or into the persistent path your instructions name.
-- Quick lookups without git (public repositories only): fetch raw files, converting `https://github.com/<owner>/<repo>/blob/<branch>/<path>` to `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`. Prefer `curl` over fetch tools that summarize pages; summaries drop exact details.
+- Quick lookups without git (public GitHub repositories only): fetch raw files, converting `https://github.com/<owner>/<repo>/blob/<branch>/<path>` to `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`. Prefer `curl` over fetch tools that summarize pages; summaries drop exact details.
 
 ## Reading
 
@@ -33,7 +33,7 @@ When you use the knowledge base for a task, add "update knowledge base" as the l
 - **wrong or outdated** — fix it;
 - **incomplete** — you needed research, trial and error, or substantial guidance from the user — add what was missing.
 
-Skip one-off details, anything a capable model already knows, and anything the user marked as confidential. Do it without asking; at the end tell the user in one line what you changed, with the pull request link.
+Skip one-off details, anything a capable model already knows, and anything the user marked as confidential. Do it without asking; at the end tell the user in one line what you changed, with the pull request link or commit.
 
 | Change | Rule |
 |---|---|
