@@ -27,7 +27,9 @@ Why the template is built the way it is. Read before changing the template or wh
 
 ## Contributing
 
-- **After a successful task, without asking**, with a one-line report. The guide is read at the start, so agents add "update knowledge base" to their task list to remember it at the end.
+- **Two kinds of knowledge trigger a contribution:** what was *decided* (architecture, decisions, conventions — from chat or implementation; outcome and reasons, not the discussion) and what had to be *learned* (questions, research, trial and error). Plus fixing wrong or outdated content. They behave differently: decisions change when someone decides anew, learnings when the outside world changes.
+- **Triggers do not depend on having consulted the knowledge base**, otherwise hard-won knowledge from unrelated-looking tasks is lost. For embedded knowledge bases the triggers are therefore repeated in the pointer in the project's always-loaded instructions.
+- **Recorded when it happens, without asking**, with a one-line report — at the latest before the task ends; agents keep "update knowledge base" on their task list as a reminder.
 - **Topics only on user request, never proposed.** Cutting topics is a design decision, proposals would interrupt users, and agents would fragment the knowledge base.
 - **Three publishing modes** (`contribution` in `knowledge-base.toml`): `pull-request` where a forge offers them (GitHub), `direct-push` to `main` on plain git servers, `with-project` for embedded knowledge bases. In the first two, changes outside `topics/` and `index.md` always go through review (PR or pushed branch). Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -60,6 +62,8 @@ Why the template is built the way it is. Read before changing the template or wh
 - **Detected, not configured:** a knowledge base whose root is not the git top level is embedded. `install`, `init`, `upgrade` and lint adapt.
 - **No pull, no own branch.** The files are in the user's working tree; touching branches would interfere with the user's work.
 - **Links into project code** are allowed and checked, so knowledge points to code instead of copying it.
+- **Starter topics `project` (decided) and `learnings` (learned)** give both kinds of knowledge a place without letting agents create topics. They are fallbacks: a matching subject topic comes first, and growing subjects become topics of their own (user decision). `manage.py embed` creates them idempotently.
+- **Shared knowledge bases are preferred** for knowledge useful beyond the project: other projects benefit. Embedded knowledge bases link there; knowledge recorded locally can move later.
 - **One pointer in the project's always-loaded instructions** (`AGENTS.md`/`CLAUDE.md`), added only with consent: they stay short, the knowledge base is read on demand.
 - **`standalone_only` paths** (GitHub workflows, which only work at the repository root) and `LICENSE` (the project's license applies) are not installed. Project CI runs lint instead.
 - **Rejected:** git submodules — error-prone for agents and users, and they lose the shared versioning with the code.

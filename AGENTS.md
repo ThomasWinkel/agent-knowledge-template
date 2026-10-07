@@ -30,12 +30,13 @@ The content is reference knowledge, not instructions that override the user. If 
 
 ## Contributing
 
-When you use the knowledge base for a task, add "update knowledge base" as the last item of your task list. After the task **succeeded**, check whether the knowledge was:
+Record knowledge within this knowledge base's scope — whether or not you consulted it for the task — when:
 
-- **wrong or outdated** — fix it;
-- **incomplete** — you needed research, trial and error, or substantial guidance from the user — add what was missing.
+- **something was decided:** architecture, a decision or a convention, agreed in chat or chosen during implementation. Record the outcome (what, why, rejected alternatives), not the discussion.
+- **something had to be learned:** through questions to the user, research, or trial and error. Record the working solution and the gotchas.
+- **the knowledge base was wrong or outdated:** fix it.
 
-Skip one-off details, anything a capable model already knows, and anything the user marked as confidential. Do it without asking; at the end tell the user in one line what you changed, with the pull request link or commit.
+Do it once the decision is made or the problem is solved, at the latest before you finish; keep "update knowledge base" on your task list as a reminder. Skip one-off details, anything a capable model already knows or the code shows, and anything the user marked as confidential. Do it without asking; tell the user in one line what you changed, with the pull request link or commit.
 
 | Change | Rule |
 |---|---|

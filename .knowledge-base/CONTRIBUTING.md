@@ -12,6 +12,13 @@ Rules for writing to the knowledge base. Paths and commands are relative to the 
 - **Durable.** Volatile values (current IDs, prices, people) go stale — describe where to look them up instead.
 - **No secrets, no personal data.** Public repositories are public; lint scans for common token formats.
 
+## Where it belongs
+
+1. **Useful beyond this project or scope**, and you know a shared knowledge base for it (from the user's instructions or links): contribute it there following its guide, and link it from here. Without access, keep it here; it can move later.
+2. **A topic covers the subject:** add it there.
+3. **Embedded knowledge base, no matching topic:** `project` for what was decided (architecture, decisions, conventions), `learnings` for what had to be learned (external systems, tools, environment, workarounds). One file per subject.
+4. **Otherwise:** do not create a topic; mention the knowledge in your final line to the user.
+
 ## File format
 
 ```markdown

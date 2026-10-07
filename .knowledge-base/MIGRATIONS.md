@@ -2,6 +2,13 @@
 
 Steps an agent applies to a knowledge base during an upgrade, in addition to the file replacement done by `manage.py upgrade`. One `## <version>` section per template version (headings are parsed by the script). Write "None." when a version needs no steps.
 
+## 0.4.0
+
+Only for embedded knowledge bases (`contribution = "with-project"`); otherwise none.
+
+1. Run `python <folder>/.knowledge-base/manage.py embed`. It creates the starter topics `project` and `learnings` if missing and prints the "## Agent knowledge" section for the project.
+2. Replace the "## Agent knowledge" section in the project's `AGENTS.md` or `CLAUDE.md` with the printed one; add it if missing and the user agrees.
+
 ## 0.3.0
 
 No steps. New: knowledge bases embedded in a project (`manage.py install`, `contribution = "with-project"`).

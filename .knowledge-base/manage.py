@@ -5,7 +5,7 @@ Standard library only, Python >= 3.11. Usage:
 
     python .knowledge-base/manage.py <command> [--help]
 
-Commands: index, lint, new-topic, install, init, upgrade, check-template, can-auto-merge.
+Commands: index, lint, new-topic, install, init, embed, upgrade, check-template, can-auto-merge.
 """
 
 from __future__ import annotations
@@ -432,8 +432,12 @@ def cmd_lint(args: argparse.Namespace) -> int:
 # --- new-topic ---------------------------------------------------------------
 
 
-def cmd_new_topic(args: argparse.Namespace) -> int:
-    parts = args.path.strip("/").split("/")
+TOPIC_TODO = ("TODO: 2-5 sentences: what this topic covers and when an agent needs it. "
+              "Then the most important facts and gotchas, if any.")
+
+
+def create_topic(path: str, title: str, description: str, overview: str = TOPIC_TODO) -> Path:
+    parts = path.strip("/").split("/")
     if not all(NAME_RE.match(p) for p in parts):
         fail("topic path segments must be lowercase kebab-case, e.g. billing-api or billing-api/webhooks")
     folder = ROOT / TOPICS_DIR / Path(*parts)
@@ -441,16 +445,18 @@ def cmd_new_topic(args: argparse.Namespace) -> int:
         fail(f"{rel(folder)} already exists")
     if len(parts) > 1 and not (folder.parent / INDEX_FILE).is_file():
         fail(f"parent topic {rel(folder.parent)} does not exist")
-    text = (
-        f"---\ntitle: {yaml_value(args.title)}\ndescription: {yaml_value(args.description)}\n---\n\n"
+    write_text(folder / INDEX_FILE, (
+        f"---\ntitle: {yaml_value(title)}\ndescription: {yaml_value(description)}\n---\n\n"
         f"> **Agents:** read [the knowledge base guide]({guide_link(folder)}) first.\n\n"
-        f"# {args.title}\n\n"
-        "TODO: 2-5 sentences: what this topic covers and when an agent needs it. "
-        "Then the most important facts and gotchas, if any.\n"
-    )
-    write_text(folder / INDEX_FILE, text)
+        f"# {title}\n\n{overview}\n"
+    ))
+    return folder / INDEX_FILE
+
+
+def cmd_new_topic(args: argparse.Namespace) -> int:
+    index = create_topic(args.path, args.title, args.description)
     write_indexes(load_config())
-    print(f"Created {rel(folder / INDEX_FILE)}. Replace the TODO with an overview.")
+    print(f"Created {rel(index)}. Replace the TODO with an overview.")
     return 0
 
 
@@ -535,14 +541,35 @@ evident from the code, and update it together with their code changes, so it is 
   ask an agent to follow `.knowledge-base/UPGRADE.md`.
 """
 
+# Starter topics of embedded knowledge bases: what was decided, and what had to be learned.
+STARTER_TOPICS = {
+    "project": (
+        "Project",
+        "Architecture, decisions and conventions of this project, with their reasons.",
+        "What has been decided for this project - by the user or by agents, in chat or during implementation - "
+        "and why: architecture, decisions, conventions. Record the outcome (what, why, rejected alternatives), "
+        "not the discussion, and only what the code does not show. One file per subject; a subject that grows "
+        "can become a topic of its own.",
+    ),
+    "learnings": (
+        "Learnings",
+        "Knowledge acquired while working on this project - external systems, tools, environment, workarounds.",
+        "Knowledge that had to be learned to solve tasks - through questions to the user, research, or trial "
+        "and error. Record the working solution and the gotchas. Knowledge useful beyond this project belongs "
+        "in a shared knowledge base; link it from here. One file per subject.",
+    ),
+}
+
 EMBEDDED_NEXT_STEPS = """
 Embedded in a project. Next steps (see .knowledge-base/INIT.md):
 
-1. With the user's consent, add to the project's AGENTS.md or CLAUDE.md:
+1. With the user's consent, add to the project's AGENTS.md or CLAUDE.md (replace an existing
+   "## Agent knowledge" section):
 
 ## Agent knowledge
 
-Project knowledge for AI agents lives in `{prefix}/`; its topics are listed in `{prefix}/index.md`.
+Project knowledge for AI agents lives in `{prefix}/` (topics: `{prefix}/index.md`); consult it when a task touches a listed topic.
+Record knowledge there when a decision or convention is made (in chat or implementation), or when you had to learn something through questions, research or trial and error.
 Read `{prefix}/AGENTS.md` before using or updating it.
 
 2. If the project has CI, offer to add a lint step (Python >= 3.11):
@@ -652,7 +679,21 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"Initialized knowledge base '{args.name}'" + (f" for {repository}" if repository else "")
           + f" (contribution: {contribution}" + (f", trusted authors: {', '.join(authors)}" if authors else "") + ").")
     if embedded:
-        print(EMBEDDED_NEXT_STEPS.format(prefix=ROOT.relative_to(git_toplevel(ROOT)).as_posix()))
+        cmd_embed(args)
+    return 0
+
+
+def cmd_embed(args: argparse.Namespace) -> int:
+    """Idempotent setup for embedded knowledge bases: missing starter topics, pointer for the project."""
+    top = git_toplevel(ROOT)
+    if top is None or top == ROOT:
+        fail("this knowledge base is not embedded in a project")
+    created = [rel(create_topic(slug, *texts)) for slug, texts in STARTER_TOPICS.items()
+               if not (ROOT / TOPICS_DIR / slug).exists()]
+    write_indexes(load_config())
+    if created:
+        print("Created starter topics: " + ", ".join(created))
+    print(EMBEDDED_NEXT_STEPS.format(prefix=ROOT.relative_to(top).as_posix()))
     return 0
 
 
@@ -799,6 +840,9 @@ def main() -> int:
     add_setup_arguments(p)
     p.add_argument("--force", action="store_true", help="re-initialize an existing knowledge base")
     p.set_defaults(func=cmd_init)
+
+    sub.add_parser("embed", help="embedded knowledge bases: create missing starter topics, print the pointer "
+                                 "for the project's agent instructions (idempotent)").set_defaults(func=cmd_embed)
 
     p = sub.add_parser("upgrade", help="run from a NEW template checkout: replace template-owned files in --target")
     p.add_argument("--target", required=True, help="path of the knowledge base to upgrade")

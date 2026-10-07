@@ -20,7 +20,7 @@ Two cases:
    ```
    With "Use this template" run `python .knowledge-base/manage.py init` with the same options instead.
    It copies the template, writes `knowledge-base.toml` and `README.md`, removes the example topic and generates `index.md`. It detects embedding (target is not the repository root) and chooses `contribution`: `with-project` when embedded, `pull-request` on GitHub, `direct-push` elsewhere (override with `--contribution`). Embedded, it skips the GitHub workflows and `LICENSE`. Existing `LICENSE`, `.gitignore` and `.gitattributes` are kept.
-4. **Embedded only**, if the user agreed — `init` prints both snippets with the actual folder:
+4. **Embedded only:** `init` also creates the starter topics `project` (what was decided) and `learnings` (what had to be learned) and prints two snippets with the actual folder (again with `python <target>/.knowledge-base/manage.py embed`). If the user agreed:
    - Add the pointer section to the project's `AGENTS.md`, or to `CLAUDE.md` if there is no `AGENTS.md` or `CLAUDE.md` does not import it. If neither exists, create `AGENTS.md` with the section and `CLAUDE.md` containing `@AGENTS.md`.
    - Add the lint step to the project's CI.
 5. Run `python <target>/.knowledge-base/manage.py lint`.
