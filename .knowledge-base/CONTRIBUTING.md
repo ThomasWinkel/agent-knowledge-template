@@ -10,11 +10,12 @@ Rules for writing to the knowledge base. Paths and commands are relative to the 
 - **Compact.** English, terse, imperative, bullets. Commands and code over prose. No introductions, no filler, no general knowledge.
 - **Precise.** Exact names, paths, versions ("applies to API v2"). Prefer facts you verified during the task; mark unverified ones.
 - **Durable.** Volatile values (current IDs, prices, people) go stale — describe where to look them up instead.
-- **No secrets, no personal data.** Public repositories are public; lint scans for common token formats.
+- **Written for others.** Other agents and people read it in their own context, without your session. State the general rule, recipe or decision, not the story of your task.
+- **Sensitive data only where needed.** Use placeholders (`<customer-id>`, `<host>`) and say where the real value comes from; readers resolve them in their context. Keep personal or internal data only if the knowledge depends on it and everyone with access to this knowledge base may see it. Never credentials (lint scans for common token formats) or what the user marked as confidential.
 
 ## Where it belongs
 
-1. **Useful beyond this project or scope**, and you know a shared knowledge base for it (from the "## Agent knowledge" section, the user's instructions or links): contribute it there following its guide, and link it from here. Without access, keep it here; it can move later.
+1. **Useful beyond this project or scope**, and you know a shared knowledge base for it (from the "## Agent knowledge" section, the user's instructions or links): contribute it there following its guide, without details only this project's readers may see, and link it from here. Without access, keep it here; it can move later.
 2. **A topic covers the subject:** add it there.
 3. **Embedded knowledge base, no matching topic:** `project` for what was decided (architecture, decisions, conventions), `learnings` for what had to be learned (external systems, tools, environment, workarounds). One file per subject.
 4. **Otherwise:** do not create a topic; mention the knowledge in your final line to the user.
