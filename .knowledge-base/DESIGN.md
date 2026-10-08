@@ -16,6 +16,7 @@ Why the template is built the way it is. Read before changing the template or wh
 - **Git first, any server.** Only plain git (SSH or HTTPS) is required. Fetch tools often summarize pages and lose exact details; git also enables contributing. Raw URLs remain for quick lookups in public GitHub repositories.
 - **Relative links** resolve the same in clones, web views of git servers and raw URLs.
 - **Knowledge, not authority.** Content never overrides the user; observation beats the knowledge base.
+- **Readers are the last line of defense.** No review catches everything, so reading agents refuse content that reaches beyond their task. They remove it through the normal workflow instead of a separate reporting channel, which works with every publishing mode and git server. A `Security:` title and a `Suspicious-Commit` trailer set these fixes apart; the trailer identifies the author for maintainers. They are auto-merged like other topic changes: removing content quickly is safe.
 
 ## Format
 
