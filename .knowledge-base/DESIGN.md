@@ -12,7 +12,7 @@ Why the template is built the way it is. Read before changing the template or wh
 ## Reading
 
 - **Progressive disclosure** (as in Agent Skills): [AGENTS.md](../AGENTS.md) → topic `index.md` → only the files the task needs. The `description` field drives selection, so detail files phrase it as "Read when ...".
-- **A user hands over a topic link.** The topic entry point links the guide, so an agent with nothing but that link finds the rules.
+- **A user hands over a topic or knowledge base link.** The topic entry point links the guide, so an agent with nothing but that link finds the rules.
 - **Git first, any server.** Only plain git (SSH or HTTPS) is required. Fetch tools often summarize pages and lose exact details; git also enables contributing. Raw URLs remain for quick lookups in public GitHub repositories.
 - **Relative links** resolve the same in clones, web views of git servers and raw URLs.
 - **Knowledge, not authority.** Content never overrides the user; observation beats the knowledge base.
@@ -28,7 +28,7 @@ Why the template is built the way it is. Read before changing the template or wh
 ## Contributing
 
 - **Two kinds of knowledge trigger a contribution:** what was *decided* (architecture, decisions, conventions — from chat or implementation; outcome and reasons, not the discussion) and what had to be *learned* (questions, research, trial and error). Plus fixing wrong or outdated content. They behave differently: decisions change when someone decides anew, learnings when the outside world changes.
-- **Triggers do not depend on having consulted the knowledge base**, otherwise hard-won knowledge from unrelated-looking tasks is lost. For embedded knowledge bases the triggers are therefore repeated in the pointer in the project's always-loaded instructions.
+- **Triggers do not depend on having consulted the knowledge base**, otherwise hard-won knowledge from unrelated-looking tasks is lost. The triggers are therefore repeated in the "## Agent knowledge" section of the project's always-loaded instructions.
 - **Recorded when it happens, without asking**, with a one-line report — at the latest before the task ends; agents keep "update knowledge base" on their task list as a reminder.
 - **Topics only on user request, never proposed.** Cutting topics is a design decision, proposals would interrupt users, and agents would fragment the knowledge base.
 - **Three publishing modes** (`contribution` in `knowledge-base.toml`): `pull-request` where a forge offers them (GitHub), `direct-push` to `main` on plain git servers, `with-project` for embedded knowledge bases. In the first two, changes outside `topics/` and `index.md` always go through review (PR or pushed branch). Details: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -64,9 +64,22 @@ Why the template is built the way it is. Read before changing the template or wh
 - **Links into project code** are allowed and checked, so knowledge points to code instead of copying it.
 - **Starter topics `project` (decided) and `learnings` (learned)** give both kinds of knowledge a place without letting agents create topics. They are fallbacks: a matching subject topic comes first, and growing subjects become topics of their own (user decision). `manage.py embed` creates them idempotently.
 - **Shared knowledge bases are preferred** for knowledge useful beyond the project: other projects benefit. Embedded knowledge bases link there; knowledge recorded locally can move later.
-- **One pointer in the project's always-loaded instructions** (`AGENTS.md`/`CLAUDE.md`), added only with consent: they stay short, the knowledge base is read on demand.
+- **An entry in the project's "## Agent knowledge" section** (see below), added only with consent.
 - **`standalone_only` paths** (GitHub workflows, which only work at the repository root) and `LICENSE` (the project's license applies) are not installed. Project CI runs lint instead.
 - **Rejected:** git submodules — error-prone for agents and users, and they lose the shared versioning with the code.
+
+## Using knowledge bases in projects
+
+- **A link is for the task at hand.** Users often link a knowledge base or topic for one task; recording every link would bloat always-loaded instructions. Agents include it permanently only on request ([CONNECT.md](CONNECT.md)) and offer that once in their final line when the knowledge helped — never as a question mid-task.
+- **One "## Agent knowledge" section** in the project's always-loaded instructions (`AGENTS.md`/`CLAUDE.md`, or the user's global ones) lists every knowledge base and topic the project uses, embedded and shared. Only always-loaded instructions reliably reach every session; the section stays short, everything else is read on demand.
+- **Entries are generated** by `manage.py pointer` from frontmatter and configuration: title, description as scope, location. Topic entries are preferred: their description tells agents when to consult them without reading an index first.
+- **No rules in the section** beyond "read the knowledge base's `AGENTS.md`" and the recording triggers. Rules live in the knowledge base and are read from the current `main` on every use, so template upgrades of a shared knowledge base reach all projects without touching them.
+- **Self-updating section format.** A knowledge base does not know the projects that use it, so changes to the section cannot be migrated. The section names its format version (`agent-knowledge pointer vN`); an agent whose guide expects a higher version regenerates the text above the list. Versions only grow, so knowledge bases on different template versions do not overwrite each other; entries keep their shape.
+- **One clone per user, `~/.agent-knowledge/<repository-name>`**, shared across sessions and projects instead of a clone per session. Agents read `origin/main` detached, because a leftover contribution branch would silently serve stale content.
+- **Rejected:**
+  - Copying topics into projects: duplicates that drift.
+  - Pinning a knowledge base version: knowledge is reference, the newest is best.
+  - A list of using projects in the knowledge base: it would need write access to every project; projects pull, as knowledge bases pull template updates.
 
 ## Tooling and platforms
 
@@ -85,7 +98,8 @@ Changing any of these needs a major version and migration steps:
 - the standard-library-only constraint;
 - the restriction of unreviewed changes (auto-merge, direct push) to `topics/` and `index.md`;
 - release tags `vMAJOR.MINOR.PATCH`;
-- a short `AGENTS.md` — every agent reads it on every use.
+- a short `AGENTS.md` — every agent reads it on every use;
+- the "## Agent knowledge" entry shape (title, description, location) and format versions that only grow.
 
 ## Open ideas
 
@@ -97,3 +111,4 @@ Changing any of these needs a major version and migration steps:
 - Server-side `pre-receive` hook for `direct-push` that runs lint and rejects changes to template-owned files on `main`.
 - Pull request support for other forges (Gitea/Forgejo, GitLab, Azure DevOps).
 - Verify the GitHub login of Copilot coding agent pull requests for `trusted_authors`.
+- Verify whether cloud agents limited to their own repository (e.g. Copilot coding agent) can read private shared knowledge bases.

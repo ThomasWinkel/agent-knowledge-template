@@ -21,7 +21,7 @@ Two cases:
    With "Use this template" run `python .knowledge-base/manage.py init` with the same options instead.
    It copies the template, writes `knowledge-base.toml` and `README.md`, removes the example topic and generates `index.md`. It detects embedding (target is not the repository root) and chooses `contribution`: `with-project` when embedded, `pull-request` on GitHub, `direct-push` elsewhere (override with `--contribution`). Embedded, it skips the GitHub workflows and `LICENSE`. Existing `LICENSE`, `.gitignore` and `.gitattributes` are kept.
 4. **Embedded only:** `init` also creates the starter topics `project` (what was decided) and `learnings` (what had to be learned) and prints two snippets with the actual folder (again with `python <target>/.knowledge-base/manage.py embed`). If the user agreed:
-   - Add the pointer section to the project's `AGENTS.md`, or to `CLAUDE.md` if there is no `AGENTS.md` or `CLAUDE.md` does not import it. If neither exists, create `AGENTS.md` with the section and `CLAUDE.md` containing `@AGENTS.md`.
+   - Add the "## Agent knowledge" section to the project's instructions, following steps 3–4 of [CONNECT.md](CONNECT.md).
    - Add the lint step to the project's CI.
 5. Run `python <target>/.knowledge-base/manage.py lint`.
 6. **Commit:**
@@ -31,5 +31,5 @@ Two cases:
    - `pull-request` on GitHub: auto-merge uses the workflow token. It fails if branch protection on `main` requires reviews, or if the organization restricts workflow permissions to read-only (Settings → Actions → General → Workflow permissions). A weekly workflow opens an issue when a new template version is available.
    - `direct-push`: whoever may push to `main` may change topics; agents push other changes as branches for review. The GitHub workflow files are inert on other servers.
    - `with-project`: knowledge changes arrive with the code changes of each task.
-   - Own repository: `LICENSE` is the template's MIT license; adjust holder or license for the content if needed. Optionally add a line to the global agent instructions (`~/.claude/CLAUDE.md`, Copilot instructions) so agents know the knowledge base without a link, e.g. `Knowledge base "<name>" (<purpose>): <repository-url> — read AGENTS.md there before using it.`
+   - Own repository: `LICENSE` is the template's MIT license; adjust holder or license for the content if needed. To use it in a project, link it for a single task, or ask an agent to include it (or some topics) permanently in the project or globally.
    - New topics: ask an agent to create them. Agents mention new template versions after contributing.

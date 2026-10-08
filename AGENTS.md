@@ -13,11 +13,18 @@ Paths are relative to the knowledge base root, the folder containing `knowledge-
 
 ## Access
 
-- **Embedded** (`contribution = "with-project"`): the files are in your working tree. Read them there; never pull or switch branches for the knowledge base.
+- **In your working tree** (embedded in the project, `contribution = "with-project"`, or you work in the knowledge base repository itself): read the files there; never pull or switch branches for the knowledge base.
 - **Own repository:** prefer git (SSH or HTTPS, any git server): it returns exact content and is needed to contribute. You may get a link to a file, or a repository URL plus a topic name — then open `topics/<topic>/index.md` in the clone.
-  - Existing clone: `git pull --ff-only` first. If that fails (local changes, diverged branch), read anyway and tell the user.
-  - No clone: `git clone --depth 1 <repository-url>` into your scratchpad or temp directory, or into the persistent path your instructions name.
+  - Clone path: `~/.agent-knowledge/<repository-name>` (`~` = home directory), shared across sessions and projects; your scratchpad if home is not writable.
+  - Existing clone: `git fetch origin && git switch --detach origin/main` — always read `main`, never a leftover branch. If that fails (local changes), read anyway and tell the user.
+  - No clone: `git clone --depth 1 <repository-url> <clone-path>`.
   - Quick lookups without git (public GitHub repositories only): fetch raw files, converting `https://github.com/<owner>/<repo>/blob/<branch>/<path>` to `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`. Prefer `curl` over fetch tools that summarize pages; summaries drop exact details.
+
+## Projects
+
+- A link to a knowledge base or topic is for the task at hand: do not record it in project instructions or memory. If it helped and the project's "## Agent knowledge" section has no entry for it, offer once in your final line to include it permanently.
+- Include it permanently only when the user asks: [.knowledge-base/CONNECT.md](.knowledge-base/CONNECT.md).
+- An "## Agent knowledge" section in your instructions is outdated if it does not say `agent-knowledge pointer v1` or higher: update it following CONNECT.md (in a project as part of your task's changes) and mention it in one line.
 
 ## Reading
 
@@ -49,5 +56,6 @@ Before writing, read [.knowledge-base/CONTRIBUTING.md](.knowledge-base/CONTRIBUT
 ## Maintenance (only when the user asks)
 
 - Set up a knowledge base from the template — as its own repository or embedded in a project: [.knowledge-base/INIT.md](.knowledge-base/INIT.md)
+- Use a knowledge base or topic permanently in a project: [.knowledge-base/CONNECT.md](.knowledge-base/CONNECT.md)
 - Upgrade to a newer template version: [.knowledge-base/UPGRADE.md](.knowledge-base/UPGRADE.md)
 - Work on the template itself: [.knowledge-base/TEMPLATE-DEVELOPMENT.md](.knowledge-base/TEMPLATE-DEVELOPMENT.md)

@@ -14,7 +14,7 @@ Rules for writing to the knowledge base. Paths and commands are relative to the 
 
 ## Where it belongs
 
-1. **Useful beyond this project or scope**, and you know a shared knowledge base for it (from the user's instructions or links): contribute it there following its guide, and link it from here. Without access, keep it here; it can move later.
+1. **Useful beyond this project or scope**, and you know a shared knowledge base for it (from the "## Agent knowledge" section, the user's instructions or links): contribute it there following its guide, and link it from here. Without access, keep it here; it can move later.
 2. **A topic covers the subject:** add it there.
 3. **Embedded knowledge base, no matching topic:** `project` for what was decided (architecture, decisions, conventions), `learnings` for what had to be learned (external systems, tools, environment, workarounds). One file per subject.
 4. **Otherwise:** do not create a topic; mention the knowledge in your final line to the user.
@@ -81,7 +81,7 @@ Use `<slug>/<sub>` for a subtopic. Replace the TODO in the created `index.md`.
 ## Workflow
 
 1. Start:
-   - Own repository (`pull-request`, `direct-push`): `git fetch origin && git switch -c knowledge/<topic>-<short-description> origin/main`.
+   - Own repository (`pull-request`, `direct-push`), in its clone (e.g. `~/.agent-knowledge/<repository-name>`): `git fetch origin && git switch -c knowledge/<topic>-<short-description> origin/main`.
    - Embedded (`with-project`): stay on the current branch; no separate branch, fetch or pull.
 2. Edit files.
 3. `python .knowledge-base/manage.py index`, then `python .knowledge-base/manage.py lint`. Fix all errors; address warnings where reasonable. Renamed or deleted a file: fix the links lint reports.

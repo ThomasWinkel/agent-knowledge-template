@@ -5,7 +5,7 @@ Standard library only, Python >= 3.11. Usage:
 
     python .knowledge-base/manage.py <command> [--help]
 
-Commands: index, lint, new-topic, install, init, embed, upgrade, check-template, can-auto-merge.
+Commands: index, lint, new-topic, install, init, embed, pointer, upgrade, check-template, can-auto-merge.
 """
 
 from __future__ import annotations
@@ -417,6 +417,9 @@ def cmd_lint(args: argparse.Namespace) -> int:
     boundary = git_toplevel(ROOT) or ROOT
     for path in markdown_files():
         lint_links(report, path, boundary)
+    guide = ROOT / GUIDE_FILE
+    if guide.is_file() and f"pointer v{POINTER_VERSION}" not in read_text(guide):
+        report.error(guide, f"must name the current pointer format 'agent-knowledge pointer v{POINTER_VERSION}'")
     if config is not None:
         for path, text in expected_indexes(config).items():
             if not path.is_file() or read_text(path) != text:
@@ -496,6 +499,10 @@ Tell an agent, for example:
 
 > Use the knowledge base {repository}, topic TOPIC. Read its AGENTS.md first.
 {usage_extra}
+A link is for the task at hand. To have agents consult a topic in every session of a project:
+
+> Include topic TOPIC from {repository} in this project.
+
 All topics are listed in [index.md](index.md). Rules for agents: [AGENTS.md](AGENTS.md).
 
 ## Maintenance
@@ -563,19 +570,32 @@ STARTER_TOPICS = {
 EMBEDDED_NEXT_STEPS = """
 Embedded in a project. Next steps (see .knowledge-base/INIT.md):
 
-1. With the user's consent, add to the project's AGENTS.md or CLAUDE.md (replace an existing
-   "## Agent knowledge" section):
-
-## Agent knowledge
-
-Project knowledge for AI agents lives in `{prefix}/` (topics: `{prefix}/index.md`); consult it when a task touches a listed topic.
-Record knowledge there when a decision or convention is made (in chat or implementation), or when you had to learn something through questions, research or trial and error.
-Read `{prefix}/AGENTS.md` before using or updating it.
-
+1. With the user's consent, add the pointer to the project's agent instructions:
+{pointer}
 2. If the project has CI, offer to add a lint step (Python >= 3.11):
 
 python {prefix}/.knowledge-base/manage.py lint
 """
+
+# The "## Agent knowledge" section in a project's always-loaded instructions lists the knowledge bases
+# and topics the project uses. Bump POINTER_VERSION whenever SECTION_TEXT changes: agents that find an
+# older version in a project regenerate the text (AGENTS.md names the current version, lint checks it).
+POINTER_VERSION = 1
+POINTER_MARKER = f"Format: agent-knowledge pointer v{POINTER_VERSION}."
+SECTION_TEXT = f"""\
+## Agent knowledge
+
+Knowledge for AI agents, read on demand. Consult an entry when a task touches its scope; read the `AGENTS.md` \
+of its knowledge base first. Record knowledge within an entry's scope there when a decision or convention is \
+made, or when you had to learn something through questions, research or trial and error. {POINTER_MARKER}
+"""
+POINTER_INSTRUCTIONS = """\
+Add to the project's AGENTS.md (or CLAUDE.md if it does not import AGENTS.md), or to the user's global
+agent instructions - see .knowledge-base/CONNECT.md. If an "## Agent knowledge" section exists: keep its
+other entries, replace an entry with the same location, and replace the text above the list if its
+format version is missing or older.
+"""
+CLONE_ROOT = "~/.agent-knowledge"
 
 
 def detect_repository() -> str | None:
@@ -693,7 +713,62 @@ def cmd_embed(args: argparse.Namespace) -> int:
     write_indexes(load_config())
     if created:
         print("Created starter topics: " + ", ".join(created))
-    print(EMBEDDED_NEXT_STEPS.format(prefix=ROOT.relative_to(top).as_posix()))
+    pointer = render_pointer(load_config(), [])
+    print(EMBEDDED_NEXT_STEPS.format(prefix=ROOT.relative_to(top).as_posix(), pointer=f"\n{pointer}"))
+    return 0
+
+
+# --- pointer -----------------------------------------------------------------
+
+
+def repository_name(url: str) -> str:
+    m = re.search(r"([^/:\\]+?)(?:\.git)?/*$", url)
+    return m[1] if m else "knowledge-base"
+
+
+def sentence(text: str) -> str:
+    text = text.strip()
+    return text if not text or text[-1] in ".!?" else text + "."
+
+
+def pointer_entry(config: dict, topic: str | None) -> str:
+    """One list entry: title, scope (the description) and location of the knowledge base or topic."""
+    top = git_toplevel(ROOT)
+    embedded = top is not None and top != ROOT
+    if embedded:
+        prefix = ROOT.relative_to(top).as_posix()
+        where = "Embedded knowledge base `{p}/` (topics: `{p}/index.md`)."
+        topic_where = "Topic `{p}/{t}/` of this project's embedded knowledge base."
+    else:
+        repository = config.get("repository", "").strip()
+        if not repository:
+            fail(f"'repository' in {CONFIG_FILE} is empty")
+        clone = f"`{CLONE_ROOT}/{repository_name(repository)}`"
+        prefix = ""
+        where = f"Knowledge base {repository} (clone: {clone}; topics: `index.md`)."
+        topic_where = f"Topic `{{t}}/` of the knowledge base {repository} (clone: {clone})."
+    if topic is None:
+        title, description = config["name"], config.get("description", "")
+        location = where.format(p=prefix)
+    else:
+        index = ROOT / TOPICS_DIR / Path(*topic.strip("/").split("/")) / INDEX_FILE
+        if not index.is_file():
+            fail(f"topic '{topic}' not found: {rel(index)} does not exist")
+        title, description = describe(index)
+        location = topic_where.format(p=prefix, t=f"{TOPICS_DIR}/{topic.strip('/')}")
+    # ASCII only: the entry is printed, and Windows consoles may not show other characters.
+    return " ".join(part for part in (f"- **{title}**:", sentence(description), location) if part)
+
+
+def render_pointer(config: dict, topics: list[str]) -> str:
+    entries = [pointer_entry(config, t) for t in topics] or [pointer_entry(config, None)]
+    return SECTION_TEXT + "\n" + "\n".join(entries) + "\n"
+
+
+def cmd_pointer(args: argparse.Namespace) -> int:
+    pointer = render_pointer(load_config(), args.topic or [])
+    print(POINTER_INSTRUCTIONS)
+    print(pointer, end="")
     return 0
 
 
@@ -843,6 +918,11 @@ def main() -> int:
 
     sub.add_parser("embed", help="embedded knowledge bases: create missing starter topics, print the pointer "
                                  "for the project's agent instructions (idempotent)").set_defaults(func=cmd_embed)
+
+    p = sub.add_parser("pointer", help="print the entry that makes a project use this knowledge base "
+                                       "(or some of its topics) permanently")
+    p.add_argument("--topic", action="append", help="topic slug, e.g. billing-api (repeatable; default: whole knowledge base)")
+    p.set_defaults(func=cmd_pointer)
 
     p = sub.add_parser("upgrade", help="run from a NEW template checkout: replace template-owned files in --target")
     p.add_argument("--target", required=True, help="path of the knowledge base to upgrade")

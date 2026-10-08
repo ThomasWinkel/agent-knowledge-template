@@ -8,7 +8,7 @@ Template for knowledge bases that AI agents (Claude Code, GitHub Copilot) read *
 
 - **Own repository or embedded:** a knowledge base is a repository of its own (shared knowledge, e.g. internal APIs and processes) or a folder such as `agent-knowledge/` inside a project repository (project knowledge, versioned and reviewed with the code).
 - **Topics** live in `topics/<topic>/`. Each has an entry point `index.md` (overview, key facts, generated list of files with "read when" descriptions) and compact Markdown files with a small YAML frontmatter (`title`, `description`).
-- **Usage:** give an agent the link to a topic's `index.md`, or the repository URL plus a topic name. It reads [AGENTS.md](AGENTS.md) first, then the entry point, then only the files the task needs.
+- **Usage:** give an agent the link to a topic's `index.md`, or the repository URL plus a topic name. It reads [AGENTS.md](AGENTS.md) first, then the entry point, then only the files the task needs. A link is for the task at hand; on request the agent includes a knowledge base or topics permanently in a project: an entry in an "## Agent knowledge" section of the project's agent instructions ([.knowledge-base/CONNECT.md](.knowledge-base/CONNECT.md)).
 - **Maintenance:** after a successful task, an agent fixes wrong or outdated knowledge and adds what was missing, then opens a pull request, pushes to `main`, or (embedded) includes the change in the task's own commit, depending on the `contribution` setting. Topics are only created when a user asks. Rules: [.knowledge-base/CONTRIBUTING.md](.knowledge-base/CONTRIBUTING.md).
 - **Any git server:** the core needs only git (SSH or HTTPS) and Python. On GitHub, workflows add lint checks, auto-merge of pull requests by trusted authors and update issues.
 - **Quality gates:** `manage.py lint` (Python standard library) checks frontmatter, links, sizes, generated indexes and common secret formats. Only topic changes are published without review.
@@ -22,6 +22,11 @@ Tell an agent (Claude Code or Copilot), for example:
 - in a clone of a new, empty repository: "Set up a knowledge base here from https://github.com/ThomasWinkel/agent-knowledge-template."
 
 The agent follows [.knowledge-base/INIT.md](.knowledge-base/INIT.md). On GitHub you can also click **Use this template** and then ask an agent in the clone to "set up this knowledge base". Afterwards, ask agents to create topics and point them at the topic links.
+
+## Use a knowledge base in a project
+
+- For one task: give the agent the link to a topic or the knowledge base.
+- Permanently: "Include topic billing-api from https://github.com/acme/knowledge in this project." The agent adds an entry to the project's `AGENTS.md`/`CLAUDE.md` ([.knowledge-base/CONNECT.md](.knowledge-base/CONNECT.md)). Rules stay in the knowledge base, so its template upgrades need no change in the project.
 
 ## Repository layout
 
