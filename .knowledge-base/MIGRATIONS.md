@@ -2,6 +2,10 @@
 
 Steps an agent applies to a knowledge base during an upgrade, in addition to the file replacement done by `manage.py upgrade`. One `## <version>` section per template version (headings are parsed by the script). Write "None." when a version needs no steps.
 
+## 0.7.0
+
+None. Contributions carry an `Agent-Model` trailer in commit messages and pull request descriptions.
+
 ## 0.6.0
 
 None. Contribution rules now cover writing for other readers and handling sensitive data.

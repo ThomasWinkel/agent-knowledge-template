@@ -86,7 +86,7 @@ Use `<slug>/<sub>` for a subtopic. Replace the TODO in the created `index.md`.
    - Embedded (`with-project`): stay on the current branch; no separate branch, fetch or pull.
 2. Edit files.
 3. `python .knowledge-base/manage.py index`, then `python .knowledge-base/manage.py lint`. Fix all errors; address warnings where reasonable. Renamed or deleted a file: fix the links lint reports.
-4. Publish according to `contribution` in `knowledge-base.toml`:
+4. Publish according to `contribution` in `knowledge-base.toml`. End every commit message and pull request description that changes the knowledge base with the trailer `Agent-Model: <your exact model ID>`, so reviewers can judge contributions by model.
    - **`with-project`:** the knowledge changes are part of your task's changes. Commit and publish them together, the way the project handles the task (same commit or pull request), so they are reviewed with the code.
    - **`pull-request`:** commit (`<topic>: <what changed>`), `git fetch origin && git rebase origin/main`, `git push -u origin HEAD`, then `gh pr create --fill` (without `gh`: give the user the link `git push` prints). Describe what was wrong or missing and how you verified it. PRs by `trusted_authors` that only change `topics/` and `index.md` are merged automatically once checks pass; all others wait for review. No push access: `gh repo fork --remote` and open the PR from the fork.
    - **`direct-push`:** commit, `git fetch origin && git rebase origin/main`, `git push origin HEAD:main`. If rejected because `main` moved: fetch, rebase, rerun `index` and `lint`, push again.

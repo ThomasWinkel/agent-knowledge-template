@@ -39,6 +39,7 @@ Why the template is built the way it is. Read before changing the template or wh
 - **`with-project`: the project's review process is the trust model.** Knowledge changes travel with the code changes of the task.
 - **`direct-push`: the git server's access rights are the trust model.** Whoever may push to `main` may change topics; no extra configuration.
 - **`pull-request` on GitHub: auto-merge** for pull requests by `trusted_authors` that change only `topics/` and `index.md`. The author is the GitHub identity the agent acts under, so trust is given per human.
+- **No restriction by model.** A model cannot be verified, only self-reported, and excluding weaker models loses what they learned. Contributions carry an `Agent-Model` trailer instead, so reviewers can judge and clean up by model. Users who distrust their agent's model stay out of `trusted_authors`.
 - **Trusted authors are read from the base branch**, so a pull request cannot add its own author.
 - **Fork pull requests are never auto-merged**: their workflow token is read-only.
 - **Template-owned files always need review.** They contain agent instructions and workflows; an unreviewed change there could redirect every agent.
