@@ -10,7 +10,7 @@ Rules for writing to the knowledge base. Paths and commands are relative to the 
 - **Compact.** English, terse, imperative, bullets. Commands and code over prose. No introductions, no filler, no general knowledge.
 - **Precise.** Exact names, paths, versions ("applies to API v2"). Prefer facts you verified during the task; mark unverified ones.
 - **Durable.** Volatile values (current IDs, prices, people) go stale — describe where to look them up instead.
-- **Written for others.** Other agents and people read it in their own context, without your session. State the general rule, recipe or decision, not the story of your task. Never copy code from a project that not every reader here may see: show the technique as a minimal example with neutral names (`MyProduct`).
+- **Written for others.** Other agents and people read it in their own context, without your session. State the general rule, recipe or decision, not the story of your task. Keep the recipe as code even if it comes from a project that not every reader here may see: do not copy it, rewrite the technique as a minimal example with neutral names (`MyProduct`).
 - **Sensitive data only where needed.** Use placeholders (`<customer-id>`, `<host>`) and say where the real value comes from; readers resolve them in their context. Keep personal or internal data only if the knowledge depends on it and everyone with access to this knowledge base may see it. Never credentials (lint scans for common token formats) or what the user marked as confidential.
 
 ## Where it belongs
